@@ -57,11 +57,40 @@ app.locals.moment = moment;
 
 var active = 'index';
 
-app.use('/retiriveItems', (req, res, next) => {
-    var dict = [];
-    SalesOrder.find().exec().then(orders_items => {
-        res.status(200).json(orders_items);
-    });
+
+app.use('/retriveItems', function(req, res, next){
+  var dict={};
+  function sortProperties(obj)
+  {
+    // convert object into array
+  	var sortable=[];
+  	for(var key in obj)
+  		if(obj.hasOwnProperty(key))
+  			sortable.push([key, obj[key]]); // each item is an array in format [key, value]
+
+  	// sort items by value
+  	sortable.sort(function(a, b)
+  	{
+  		var x=a[1],
+  			y=b[1];
+  		return x<y ? 1 : x>y ? -1 : 0;
+  	});
+  	return sortable; // array in format [ [ key1, val1 ], [ key2, val2 ], ... ]
+  }
+  SalesOrder.find().exec().then(function(order_items){
+    for (var i in order_items){
+      var key = order_items[i].medicento_name;
+      var quant = order_items[i].quantity;
+      if(typeof dict[key] !== 'undefined'){
+          dict[key] = dict[key] + quant;
+      }
+      else{
+        dict[key]=quant;
+      };
+    };
+    dict = sortProperties(dict);
+    res.status(200).json(dict);
+  });
 });
 
 app.use('/history', (req, res, next) => {
@@ -197,5 +226,5 @@ app.use('/', (req, res, next) => {
     });
 });
 
-
 module.exports = app;
+
